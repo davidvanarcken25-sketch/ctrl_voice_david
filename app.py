@@ -5,52 +5,42 @@ from bokeh.models import CustomJS
 from streamlit_bokeh_events import streamlit_bokeh_events
 from PIL import Image
 import time
-import json
 import paho.mqtt.client as paho
+import json
 from gtts import gTTS
 from googletrans import Translator
 
-# --- Funciones de conexión MQTT ---
+# --- Funciones MQTT ---
 def on_publish(client, userdata, result):
-    print("📡 Comando publicado exitosamente.")
+    print("El dato ha sido publicado\n")
     pass
 
 def on_message(client, userdata, message):
     global message_received
-    time.sleep(1)
+    time.sleep(2)
     message_received = str(message.payload.decode("utf-8"))
-    st.write(f"🏁 Respuesta recibida: {message_received}")
+    st.write(message_received)
 
 # --- Configuración del broker MQTT ---
 broker = "broker.mqttdashboard.com"
 port = 1883
-client = paho.Client("Entrenador_Voz")
-client.on_message = on_message
+client1 = paho.Client("GIT-HUBC")
+client1.on_message = on_message
 
 # --- Interfaz principal ---
-st.set_page_config(page_title="Asistente Deportivo por Voz", page_icon="⚽", layout="centered")
+st.title("🏎️ Control de Voz - Velocidad de Auto")
+st.subheader("Habla para controlar la velocidad del vehículo")
 
-st.title("🏋️‍♂️ ASISTENTE DEPORTIVO POR VOZ")
-st.subheader("Controla tu entrenamiento usando solo tu voz 🎙️")
-
-# Imagen representativa
 try:
-    image = Image.open("entrenamiento.jpg")
-    st.image(image, width=250)
+    image = Image.open("auto.jpg")
+    st.image(image, width=300)
 except:
-    st.warning("No se encontró la imagen 'entreno.jpg'")
+    st.warning("⚠️ No se encontró la imagen 'auto.jpg'")
 
-st.write("Toca el botón y da una instrucción deportiva como:")
-st.markdown("""
-- “Inicia calentamiento”  
-- “Mide mi tiempo de carrera”  
-- “Reproduce música motivadora”  
-- “Detén el cronómetro”  
-""")
+st.write("🎙️ Toca el botón y habla:")
 
-# --- Botón de control de voz ---
-stt_button = Button(label="🎤 Activar micrófono", width=220)
-
+# --- Botón de voz ---
+stt_button = Button(label="🎤 Iniciar Reconocimiento", width=250)
 stt_button.js_on_event("button_click", CustomJS(code="""
     var recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
@@ -66,11 +56,11 @@ stt_button.js_on_event("button_click", CustomJS(code="""
         if (value != "") {
             document.dispatchEvent(new CustomEvent("GET_TEXT", {detail: value}));
         }
-    }
+    };
     recognition.start();
 """))
 
-# --- Escucha eventos ---
+# --- Captura de voz ---
 result = streamlit_bokeh_events(
     stt_button,
     events="GET_TEXT",
@@ -80,36 +70,27 @@ result = streamlit_bokeh_events(
     debounce_time=0
 )
 
-# --- Procesamiento del comando ---
-if result:
-    if "GET_TEXT" in result:
-        comando = result.get("GET_TEXT").strip()
-        st.success(f"🎧 Comando detectado: {comando}")
+# --- Procesamiento de voz y envío MQTT ---
+if result and "GET_TEXT" in result:
+    comando = result.get("GET_TEXT").strip().lower()
+    st.success(f"🎧 Comando detectado: {comando}")
 
-        # Enviar comando por MQTT
-        client.on_publish = on_publish
-        client.connect(broker, port)
-        message = json.dumps({"ComandoDeportivo": comando})
-        client.publish("asistente_deportivo", message)
+    client1.on_publish = on_publish
+    client1.connect(broker, port)
 
-        # Generar respuesta hablada
-        respuesta = f"Comando recibido: {comando}. ¡Vamos con toda!"
-        tts = gTTS(respuesta, lang="es")
-        os.makedirs("temp", exist_ok=True)
-        audio_path = "temp/respuesta.mp3"
-        tts.save(audio_path)
-        st.audio(audio_path)
+    message = json.dumps({"comando": comando})
+    ret = client1.publish("voz_auto_david", message)
 
-        # Traducción opcional
-        traductor = Translator()
-        traduccion = traductor.translate(comando, dest="en")
-        st.write(f"🔤 Traducción (inglés): {traduccion.text}")
+    # Traducción y voz
+    translator = Translator()
+    respuesta = translator.translate(f"Comando recibido: {comando}", dest="es").text
+    tts = gTTS(respuesta, lang="es")
+    tts.save("temp_audio.mp3")
 
-st.markdown("---")
-st.caption("Desarrollado por: Tu Asistente Deportivo Virtual 🏃‍♀️")
+    audio_file = open("temp_audio.mp3", "rb")
+    audio_bytes = audio_file.read()
+    st.audio(audio_bytes, format="audio/mp3")
 
-    
-    try:
-        os.mkdir("temp")
-    except:
-        pass
+# --- Crear carpeta temporal si no existe ---
+if not os.path.exists("temp"):
+    os.mkdir("temp")
