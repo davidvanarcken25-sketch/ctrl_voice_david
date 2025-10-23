@@ -38,7 +38,7 @@ try:
     image = Image.open("entrenamiento.jpg")
     st.image(image, width=250)
 except:
-    st.warning("No se encontró la imagen 'entrenamiento.jpg'")
+    st.warning("No se encontró la imagen 'entreno.jpg'")
 
 st.write("Toca el botón y da una instrucción deportiva como:")
 st.markdown("""
