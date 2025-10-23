@@ -10,6 +10,22 @@ import json
 from gtts import gTTS
 from googletrans import Translator
 
+# ============================================================
+# 🚗 CONTROL DE VOZ - VEHÍCULO INTELIGENTE
+# ------------------------------------------------------------
+# Esta aplicación permite controlar un vehículo mediante comandos de voz.
+# Al hablar, el sistema convierte tu voz en texto, lo envía por MQTT y
+# responde con una confirmación hablada. 
+#
+# 👉 COMANDOS RECONOCIDOS (ejemplos):
+# - "avanzar" → mover hacia adelante
+# - "retroceder" → ir hacia atrás
+# - "detener" o "alto" → detener el vehículo
+# - "acelerar" → aumentar velocidad
+# - "frenar" → reducir velocidad
+# - "izquierda" / "derecha" → girar
+# ============================================================
+
 # --- Funciones MQTT ---
 def on_publish(client, userdata, result):
     print("El dato ha sido publicado\n")
@@ -29,13 +45,23 @@ client1.on_message = on_message
 
 # --- Interfaz principal ---
 st.title("🏎️ Control de Voz - Velocidad de Auto")
-st.subheader("Habla para controlar la velocidad del vehículo")
+st.subheader("Habla para controlar la velocidad del vehículo con tu voz 🗣️")
 
 try:
     image = Image.open("auto.jpg")
     st.image(image, width=300)
 except:
     st.warning("⚠️ No se encontró la imagen 'auto.jpg'")
+
+st.markdown("""
+### 🎮 Comandos disponibles:
+- 🟢 **Avanzar** → Mover hacia adelante  
+- 🔴 **Detener** o **Alto** → Detener el vehículo  
+- 🟡 **Acelerar** → Aumentar velocidad  
+- ⚪ **Frenar** → Reducir velocidad  
+- 🔵 **Izquierda** / **Derecha** → Girar dirección  
+- ⚙️ **Retroceder** → Mover hacia atrás  
+""")
 
 st.write("🎙️ Toca el botón y habla:")
 
